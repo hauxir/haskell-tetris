@@ -5,21 +5,9 @@ import TetrisGame.Logic
 gridX = 50
 gridY = 4
 
-drawblock 'O' = do
-                setColor defaultColorID
-                drawString block
+rows = 25
+columns = 10
 
-drawblock 'I' = do
-                setColor defaultColorID
-                drawString block
-
-drawblock 'S' = do
-                setColor defaultColorID
-                drawString block
-
-drawblock 'T' = do
-                setColor defaultColorID
-                drawString block
 
 main :: IO ()
 main = runCurses $ do
@@ -28,39 +16,35 @@ main = runCurses $ do
     green <- newColorID ColorGreen ColorGreen 3
     blue <- newColorID ColorBlue ColorBlue 4
     yellow <- newColorID ColorYellow ColorYellow 5
+    let
+        drawblock color = do
+                        setColor color
+                        drawString block
+
+        draw 'I' = drawblock red
+        draw 'S' = drawblock green
+        draw 'O' = drawblock blue
+        draw 'T' = drawblock yellow
+        draw _ = return ()
+
+        drawLine [] y = return ()
+        drawLine (head:tail) y = do
+                                let x = (columns-((toInteger (length block))*(toInteger (length tail))))
+                                moveCursor y (8+gridX+x+2)
+                                draw head
+                                drawLine tail y
+
+        drawBlocks [] = return ()
+        drawBlocks (head:tail) = do
+                                    let y = ((rows-1)-(toInteger (length tail)))
+                                    drawLine head y
+                                    drawBlocks tail
     setCursorMode CursorInvisible
     setEcho False
     w <- defaultWindow
     updateWindow w $ do
-
         drawGrid gridY gridX gridcolor
-        moveCursor (gridLines+gridY) (gridX+2)
-
-        --I block
-        setColor red
-        drawString (blocks 4)
-
-        --O block
-        setColor blue
-        moveCursor (gridLines+gridY-1) (gridX+2)
-        drawString (blocks 2)
-        moveCursor (gridLines+gridY-2) (gridX+2)
-        drawString (blocks 2)
-
-        --S block
-        setColor green
-        moveCursor (gridLines+gridY) (gridX+8)
-        drawString (blocks 2)
-        moveCursor (gridLines+gridY-1) (gridX+10)
-        drawString (blocks 2)
-
-        --T block
-        setColor yellow
-        moveCursor (gridLines+gridY) (gridX+14)
-        drawString (blocks 3)
-        moveCursor (gridLines+gridY-1) (gridX+16)
-        drawString (blocks 1)
-
+        drawBlocks gridRows
     render
     waitFor w (\ev -> ev == EventCharacter 'q' || ev == EventCharacter 'Q')
 
