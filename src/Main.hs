@@ -16,6 +16,9 @@ main = runCurses $ do
     green <- newColorID ColorGreen ColorGreen 3
     blue <- newColorID ColorBlue ColorBlue 4
     yellow <- newColorID ColorYellow ColorYellow 5
+    cyan <- newColorID ColorCyan ColorCyan 6
+    white <- newColorID ColorWhite ColorWhite 7
+    magenta <- newColorID ColorMagenta ColorMagenta 8
     let
         drawblock color = do
                         setColor color
@@ -25,6 +28,9 @@ main = runCurses $ do
         draw 'S' = drawblock green
         draw 'O' = drawblock blue
         draw 'T' = drawblock yellow
+        draw 'Z' = drawblock cyan
+        draw 'J' = drawblock white
+        draw 'L' = drawblock magenta
         draw _ = return ()
 
         drawLine [] y = return ()
@@ -39,6 +45,7 @@ main = runCurses $ do
                                     let y = ((rows-1)-(toInteger (length tail)))
                                     drawLine head y
                                     drawBlocks tail
+
     setCursorMode CursorInvisible
     setEcho False
     w <- defaultWindow
