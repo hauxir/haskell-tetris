@@ -4,7 +4,7 @@ import UI.NCurses
 block = "# "
 blocks n = concat $ replicate n block
 
-gridLines = 20
+gridLines = 22
 gridColor = newColorID ColorBlue ColorDefault 1
 
 gridTop :: String

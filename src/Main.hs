@@ -1,11 +1,13 @@
 import UI.NCurses
 import TetrisUI.Grid
 import TetrisGame.Logic
+import System.Exit
+
 
 gridX = 50
 gridY = 4
 
-rows = 25
+rows = 22
 columns = 10
 
 
@@ -31,6 +33,7 @@ main = runCurses $ do
         draw 'Z' = drawblock cyan
         draw 'J' = drawblock white
         draw 'L' = drawblock magenta
+        draw 'M' = drawblock magenta
         draw _ = return ()
 
         drawLine [] y = return ()
@@ -42,23 +45,30 @@ main = runCurses $ do
 
         drawBlocks [] = return ()
         drawBlocks (head:tail) = do
-                                    let y = ((rows-1)-(toInteger (length tail)))
+                                    let y = (gridY+rows)-(toInteger (length tail))
                                     drawLine head y
                                     drawBlocks tail
 
     setCursorMode CursorInvisible
     setEcho False
     w <- defaultWindow
-    updateWindow w $ do
-        drawGrid gridY gridX gridcolor
-        drawBlocks gridRows
-    render
-    waitFor w (\ev -> ev == EventCharacter 'q' || ev == EventCharacter 'Q')
-
-waitFor :: Window -> (Event -> Bool) -> Curses ()
-waitFor w p = loop where
-    loop = do
-        ev <- getEvent w Nothing
-        case ev of
-            Nothing -> loop
-            Just ev' -> if p ev' then return () else loop
+    let updateScreen gridlines = do
+                        updateWindow w $ do
+                            drawGrid gridY gridX gridcolor
+                            drawBlocks gridlines
+                        render
+                        ev <- getEvent w (Just 100)
+                        case ev of
+                            Nothing -> updateScreen regular_update
+                            Just ev' -> if ev' == (EventCharacter 'q')
+                                        then return ()
+                                   else if ev' == (EventSpecialKey KeyLeftArrow)
+                                        then updateScreen (move_left regular_update)
+                                   else if ev' == (EventSpecialKey KeyRightArrow)
+                                        then updateScreen (move_right regular_update)
+                                   else if ev' == (EventSpecialKey KeyDownArrow)
+                                        then updateScreen (apply_gravity regular_update)
+                                   else updateScreen regular_update
+                            where
+                                regular_update = add_block (clear_lines (freeze_blocks (apply_gravity (gridlines))))
+    updateScreen gridRows
