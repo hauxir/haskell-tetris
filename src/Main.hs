@@ -39,7 +39,7 @@ main = runCurses $ do
         drawLine [] y = return ()
         drawLine (head:tail) y = do
                                 let x = (columns-((toInteger (length block))*(toInteger (length tail))))
-                                moveCursor y (8+gridX+x+2)
+                                moveCursor y (gridX+x+columns)
                                 draw head
                                 drawLine tail y
 
@@ -52,23 +52,23 @@ main = runCurses $ do
     setCursorMode CursorInvisible
     setEcho False
     w <- defaultWindow
-    let updateScreen gridlines = do
+    let updateScreen gameState = do
                         updateWindow w $ do
                             drawGrid gridY gridX gridcolor
-                            drawBlocks gridlines
+                            drawBlocks gameState
                         render
-                        ev <- getEvent w (Just 100)
+                        ev <- getEvent w (Just 1000)
                         case ev of
-                            Nothing -> updateScreen regular_update
+                            Nothing -> updateScreen (tetrisUpdate gameState)
                             Just ev' -> if ev' == (EventCharacter 'q')
                                         then return ()
                                    else if ev' == (EventSpecialKey KeyLeftArrow)
-                                        then updateScreen (move_left regular_update)
+                                        then updateScreen (tetrisMoveLeft gameState)
                                    else if ev' == (EventSpecialKey KeyRightArrow)
-                                        then updateScreen (move_right regular_update)
+                                        then updateScreen (tetrisMoveRight gameState)
                                    else if ev' == (EventSpecialKey KeyDownArrow)
-                                        then updateScreen (apply_gravity regular_update)
-                                   else updateScreen regular_update
-                            where
-                                regular_update = add_block (clear_lines (freeze_blocks (apply_gravity (gridlines))))
-    updateScreen gridRows
+                                        then updateScreen (tetrisSpeedup gameState)
+                                   else if ev' == (EventCharacter ' ')
+                                        then updateScreen (tetrisDropblock gameState)
+                                   else updateScreen (tetrisUpdate gameState)
+    updateScreen newGame
