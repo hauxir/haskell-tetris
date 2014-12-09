@@ -34,6 +34,7 @@ main = runCurses $ do
         draw 'J' = drawblock white
         draw 'L' = drawblock magenta
         draw 'M' = drawblock magenta
+        draw ' ' = drawblock gridcolor
         draw _ = return ()
 
         drawLine [] y = return ()
@@ -51,13 +52,13 @@ main = runCurses $ do
 
     setCursorMode CursorInvisible
     setEcho False
+    setCBreak True
     w <- defaultWindow
     let updateScreen gameState = do
                         updateWindow w $ do
-                            drawGrid gridY gridX gridcolor
                             drawBlocks gameState
                         render
-                        ev <- getEvent w (Just 1000)
+                        ev <- getEvent w (Just 50)
                         case ev of
                             Nothing -> updateScreen (tetrisUpdate gameState)
                             Just ev' -> if ev' == (EventCharacter 'q')
@@ -71,4 +72,7 @@ main = runCurses $ do
                                    else if ev' == (EventCharacter ' ')
                                         then updateScreen (tetrisDropblock gameState)
                                    else updateScreen (tetrisUpdate gameState)
-    updateScreen newGame
+    updateWindow w $ do
+        drawGrid gridY gridX gridcolor
+    render
+    updateScreen (tetrisUpdate newGame)

@@ -1,7 +1,7 @@
 module TetrisUI.Grid where
 import UI.NCurses
 
-block = "# "
+block = " ."
 blocks n = concat $ replicate n block
 
 gridLines = 22
@@ -11,10 +11,10 @@ gridTop :: String
 gridTop = "____________________"
 
 gridMiddle :: String
-gridMiddle = "||  .   .   .   .   . ||"
+gridMiddle = "|                    |"
 
 gridBottom :: String
-gridBottom = "+********************+"
+gridBottom = " -------------------- "
 
 drawLines :: Integer -> Integer -> Update()
 drawLines y x = do drawLines' y x gridLines
@@ -31,7 +31,7 @@ drawGrid y x c = do
         setColor c
         moveCursor y (x+2)
         drawString gridTop
-        drawLines (y+1) x
+        drawLines (y+1) (x+1)
         moveCursor (gridLines+y+1) (x+1)
         drawString gridBottom
 
