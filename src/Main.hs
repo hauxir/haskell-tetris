@@ -26,16 +26,14 @@ main = runCurses $ do
                         setColor color
                         drawString block
 
-        draw 'I' = drawblock red
-        draw 'S' = drawblock green
-        draw 'O' = drawblock blue
-        draw 'T' = drawblock yellow
-        draw 'Z' = drawblock cyan
-        draw 'J' = drawblock white
-        draw 'L' = drawblock magenta
-        draw 'M' = drawblock magenta
-        draw ' ' = drawblock gridcolor
-        draw _ = return ()
+        draw (Just (Block I _ _)) = drawblock red
+        draw (Just (Block S _ _)) = drawblock green
+        draw (Just (Block O _ _)) = drawblock blue
+        draw (Just (Block T _ _)) = drawblock yellow
+        draw (Just (Block Z _ _))  = drawblock cyan
+        draw (Just (Block J _ _))  = drawblock white
+        draw (Just (Block L _ _))  = drawblock magenta
+        draw Nothing = drawblock gridcolor
 
         drawLine [] y = return ()
         drawLine (head:tail) y = do
@@ -70,7 +68,7 @@ main = runCurses $ do
                                    else if ev' == (EventSpecialKey KeyDownArrow)
                                         then updateScreen (tetrisSpeedup gameState)
                                    else if ev' == (EventSpecialKey KeyUpArrow)
-                                        then updateScreen gameState
+                                        then updateScreen (tetrisRotate gameState)
                                    else if ev' == (EventCharacter ' ')
                                         then updateScreen (tetrisDropblock gameState)
                                    else updateScreen (tetrisUpdate gameState)
