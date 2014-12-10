@@ -58,7 +58,7 @@ main = runCurses $ do
                         updateWindow w $ do
                             drawBlocks gameState
                         render
-                        ev <- getEvent w (Just 50)
+                        ev <- getEvent w (Just 1000)
                         case ev of
                             Nothing -> updateScreen (tetrisUpdate gameState)
                             Just ev' -> if ev' == (EventCharacter 'q')
@@ -69,6 +69,8 @@ main = runCurses $ do
                                         then updateScreen (tetrisMoveRight gameState)
                                    else if ev' == (EventSpecialKey KeyDownArrow)
                                         then updateScreen (tetrisSpeedup gameState)
+                                   else if ev' == (EventSpecialKey KeyUpArrow)
+                                        then updateScreen gameState
                                    else if ev' == (EventCharacter ' ')
                                         then updateScreen (tetrisDropblock gameState)
                                    else updateScreen (tetrisUpdate gameState)

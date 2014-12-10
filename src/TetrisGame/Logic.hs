@@ -105,14 +105,15 @@ freeze_blocks rows | stopped rows = map freeze_blocks' rows
 
 add_block :: [[Char]] -> [[Char]]
 add_block rows | empty rows = [
-                                   [' ',' ',' ',' ','M','M',' ' ,' ',' ',' '],
-                                   [' ',' ',' ',' ','M','M',' ' ,' ',' ',' ']
+                                   [' ',' ',' ','M','M','M',' ' ,' ',' ',' '],
+                                   [' ',' ',' ',' ','M',' ',' ' ,' ',' ',' ']
                                 ] ++ (tail (tail rows))
                | otherwise = rows
 
 drop_block :: [[Char]] -> [[Char]]
 drop_block rows | (gravitate rows /= rows) = drop_block (gravitate rows)
                 | otherwise = rows
+
 
 tetrisUpdate :: [[Char]] -> [[Char]]
 tetrisUpdate state = gravitate (add_block (clear_lines (freeze_blocks state)))
@@ -134,4 +135,3 @@ tetrisRotateRight state = state
 
 tetrisRotateLeft :: [[Char]] -> [[Char]]
 tetrisRotateLeft state = state
-printTetris state = mapM_ print state
