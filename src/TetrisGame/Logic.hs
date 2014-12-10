@@ -1,9 +1,16 @@
 module TetrisGame.Logic where
 import Data.List
 import Data.Maybe
+import System.Random
+import System.IO.Unsafe
+
+randomStr :: String
+randomStr = take 10 $ randomRs ('a','z') $ unsafePerformIO newStdGen
 
 data Shape = J | L | I | S | Z | O | T
-            deriving (Eq, Show)
+            deriving (Eq, Show, Enum)
+
+allShapes = [J ..]
 
 data Block = Block { shape :: Shape, moving::Bool, origin::Bool}
             deriving (Eq, Show)
@@ -11,7 +18,7 @@ data Block = Block { shape :: Shape, moving::Bool, origin::Bool}
 type Row = [Maybe Block]
 type Grid = [Row]
 
-newGame = replicate 22 (replicate 10 Nothing)
+newGame = replicate 26 (replicate 10 Nothing)
 
 gravitate :: Grid -> Grid
 gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
@@ -88,32 +95,85 @@ freeze_blocks rows | stopped rows = map freeze_blocks' rows
                 freeze_blocks' (Just (Block s True o):t) = (Just (Block s False o):(freeze_blocks' t))
                 freeze_blocks' b  = (head b):freeze_blocks' (tail b)
 
-add_block :: Grid -> Grid
-add_block rows | empty rows = [
-                                   [Nothing,Nothing,Nothing,Just (Block I True False),Just (Block I True False),Just (Block I True False),Nothing ,Nothing,Nothing,Nothing],
-                                   [Nothing,Nothing,Nothing,Nothing,Just (Block I True False),Nothing,Nothing ,Nothing,Nothing,Nothing]
-                                ] ++ (tail (tail rows))
-               | otherwise = rows
+create_shape sh
+              | sh == T =
+                    pad [
+                        [t,t,t],
+                        [x,t,x]
+                    ]
+              | sh == I =
+                    pad [
+                        [x,i,x],
+                        [x,i,x],
+                        [x,i,x],
+                        [x,i,x]
+                    ]
+              | sh == J =
+                    pad [
+                        [x,j,x],
+                        [x,j,x],
+                        [j,j,x]
+                    ]
+              | sh == L =
+                    pad [
+                        [x,l,x],
+                        [x,l,x],
+                        [x,l,l]
+                    ]
+              | sh == S =
+                    pad [
+                        [x,s,s],
+                        [s,s,x]
+                    ]
+              | sh == Z =
+                    pad [
+                        [z,z,x],
+                        [x,z,z]
+                    ]
+              | sh == O =
+                    pad [
+                        [x,o,o],
+                        [x,o,o]
+                    ]
+        where
+              t = block T
+              j = block J
+              i = block I
+              l = block L
+              z = block Z
+              s = block S
+              o = block O
+              block shape  = Just (Block shape True False)
+              x = Nothing
+              pad s | length s == 2 = [(replicate 10 x)] ++ (map hpad s) ++ [(replicate 10 x)]
+                    | length s == 3 = [(replicate 10 x)] ++ (map hpad s)
+                    | otherwise = (map hpad s)
+              hpad l = (replicate 3 x) ++ l ++ (replicate 4 x)
+
+add_block :: Grid -> StdGen -> Grid
+add_block rows rgen | empty rows = (create_shape (allShapes !! (fst (randomR (0,(length allShapes)-1) rgen)))) ++ (tail (tail (tail (tail rows))))
+                    | otherwise = rows
+
 
 drop_block :: Grid -> Grid
 drop_block rows | (gravitate rows /= rows) = drop_block (gravitate rows)
                 | otherwise = rows
 
 
-tetrisUpdate :: Grid -> Grid
-tetrisUpdate state = gravitate (add_block (clear_lines (freeze_blocks state)))
+tetrisUpdate :: Grid -> StdGen -> Grid
+tetrisUpdate state g = add_block (gravitate (clear_lines (freeze_blocks state))) g
 
 tetrisSpeedup :: Grid -> Grid
-tetrisSpeedup state = gravitate (tetrisUpdate state)
+tetrisSpeedup state = gravitate state
 
 tetrisMoveRight :: Grid -> Grid
-tetrisMoveRight state = move_right (tetrisUpdate state)
+tetrisMoveRight state = move_right state
 
 tetrisMoveLeft :: Grid -> Grid
-tetrisMoveLeft state = move_left (tetrisUpdate state)
+tetrisMoveLeft state = move_left state
 
 tetrisDropblock :: Grid -> Grid
-tetrisDropblock state = drop_block (tetrisUpdate state)
+tetrisDropblock state = drop_block state
 
 tetrisRotate :: Grid -> Grid
 tetrisRotate state = state
