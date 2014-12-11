@@ -3,6 +3,7 @@ import UI.NCurses
 import System.Random
 import Text.Printf
 import Control.Monad
+import Data.Char
 import Tetris
 
 playGame :: IO ()
@@ -105,36 +106,51 @@ playGame = do
 
             drawScore :: Int -> Update()
             drawScore score = do
-                moveCursor (gridY - 1) (gridX + 2)
+                moveCursor (gridY - 1) (gridX + 1)
                 setColor gridcolor
                 let scorestr = show score
                 drawString ("Score: " ++ scorestr)
 
-            updateScreen :: Grid -> Int -> StdGen -> Curses()
-            updateScreen gameState currentScore gen = do
+            drawLevel :: Int -> Update()
+            drawLevel level = do
+                moveCursor (gridY - 1) (gridX + 15)
+                setColor gridcolor
+                drawString ("Level: " ++ show level)
+
+            levelMenu = do
+                setColor redtext
+                drawString "                    "
+                moveCursor (gridY + quot rows 2 + 1) (gridX + 2)
+                drawString "    Choose level:   "
+                moveCursor (gridY + quot rows 2 + 2) (gridX + 2)
+                drawString "        0-9         "
+
+            updateScreen :: Grid -> Int -> StdGen -> Int -> Curses()
+            updateScreen gameState currentScore gen lvl = do
                 updateWindow w $ do
                     drawBlocks gameState
                     drawScore currentScore
+                    drawLevel lvl
                     when (gameOver gameState) drawGameOver
                 render
-                ev <- getEvent w (Just 200)
+                ev <- getEvent w (Just ((1+(9-toInteger lvl))*100))
                 case ev of
-                    Nothing -> updateScreen state newScore gen'
+                    Nothing -> updateScreen state newScore gen' lvl
                     Just ev'
                         | ev' == EventCharacter 'q' -> return ()
                         | ev' == EventSpecialKey KeyLeftArrow
-                            -> updateScreen (moveLeft state) newScore gen'
+                            -> updateScreen (moveLeft state) newScore gen' lvl
                         | ev' == EventSpecialKey KeyRightArrow
-                            -> updateScreen (moveRight state) newScore gen'
+                            -> updateScreen (moveRight state) newScore gen' lvl
                         | ev' == EventSpecialKey KeyDownArrow
-                            -> updateScreen (speedUp state) newScore gen'
+                            -> updateScreen (speedUp state) newScore gen' lvl
                         | ev' == EventSpecialKey KeyUpArrow
-                            -> updateScreen (rotate state) newScore gen'
+                            -> updateScreen (rotate state) newScore gen' lvl
                         | ev' == EventCharacter ' '
-                            -> updateScreen (dropBlock state) newScore gen'
+                            -> updateScreen (dropBlock state) newScore gen' lvl
                         | ev' == EventCharacter 'r'
-                            -> updateScreen newGame 0 gen'
-                        | otherwise -> updateScreen state newScore gen'
+                            -> game
+                        | otherwise -> updateScreen state newScore gen' lvl
                     where
                         nextshape :: Shape
                         nextshape = fst (randomShape gen)
@@ -146,10 +162,19 @@ playGame = do
                         state = update gameState nextshape
 
                         newScore :: Int
-                        newScore = currentScore + score gameState
+                        newScore = currentScore + (score gameState*lvl)
+            game :: Curses()
+            game = do
+                updateWindow w $ drawGrid gridY gridX gridcolor
+                updateWindow w levelMenu
+                render
+                ev <- getEvent w Nothing
+                case ev of
+                    Nothing -> game
+                    Just (EventCharacter c) | isNumber c -> updateScreen newGame 0 g (digitToInt c)
+                                            | c == 'q' -> return ()
+                    Just _ -> game
 
         setCursorMode CursorInvisible
         setEcho False
-        updateWindow w $ drawGrid gridY gridX gridcolor
-        render
-        updateScreen newGame 0 g
+        game
