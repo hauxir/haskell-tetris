@@ -10,10 +10,10 @@ module Tetris(
     rotate,
     score,
     gameOver,
-    Shape(..),
+    Grid,
     Row,
     Block(..),
-    Grid
+    Shape(..)
 ) where
 import Data.List
 import Data.Maybe

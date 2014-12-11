@@ -20,11 +20,20 @@ playGame = do
         magenta <- newColorID ColorMagenta ColorMagenta 8
         redtext <- newColorID ColorRed ColorDefault 9
         let
+            block :: String
             block = " ."
+
+            gridX :: Integer
             gridX = 50
+
+            gridY :: Integer
             gridY = 4
-            rows = 22
-            columns = 10
+
+            rows :: Integer
+            rows = toInteger (length newGame - 4)
+
+            columns :: Integer
+            columns = toInteger (length (head newGame))
 
             drawGrid :: Integer -> Integer -> ColorID -> Update()
             drawGrid y x c = do
