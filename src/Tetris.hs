@@ -1,4 +1,4 @@
-module TetrisGame.Logic where
+module Tetris where
 import Data.List
 import Data.Maybe
 import System.Random
