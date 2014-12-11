@@ -1,7 +1,10 @@
 module TetrisCurses where
 import UI.NCurses
-import Tetris
+import Data.List.Split
 import System.Random
+import Text.Printf
+
+import Tetris
 
 gridX = 50
 gridY = 4
@@ -89,39 +92,49 @@ playGame = do
                                 drawString "         "
                                 moveCursor (gridY + (quot rows 2)+1) (gridX+8)
                                 drawString "GAME OVER!"
-                                moveCursor (gridY + (quot rows 2)+2) (gridX+8)
-                                drawString "         "
+                                moveCursor (gridY + (quot rows 2)+2) (gridX+2)
+                                drawString " press 'r' to retry"
+
+                drawScore score = do
+                                     moveCursor (gridY-1) (gridX+2)
+                                     setColor gridcolor
+                                     let scorestr = show score
+                                     drawString ("Score: " ++ scorestr)
 
             setCursorMode CursorInvisible
             setEcho False
             setCBreak True
             w <- defaultWindow
-            let updateScreen gameState gen = do
+            let updateScreen gameState score gen= do
                                 updateWindow w $ do
                                     drawBlocks gameState
+                                    drawScore score
                                     if gameover gameState then drawGameOver else return ()
                                 render
                                 ev <- getEvent w (Just 200)
                                 case ev of
-                                    Nothing -> updateScreen state gen'
+                                    Nothing -> updateScreen state newScore gen'
                                     Just ev' -> if ev' == (EventCharacter 'q')
                                                 then return ()
                                         else if ev' == (EventSpecialKey KeyLeftArrow)
-                                                then updateScreen (tetrisMoveLeft state) gen'
+                                                then updateScreen (tetrisMoveLeft state) newScore gen'
                                         else if ev' == (EventSpecialKey KeyRightArrow)
-                                                then updateScreen (tetrisMoveRight state) gen'
+                                                then updateScreen (tetrisMoveRight state) newScore gen'
                                         else if ev' == (EventSpecialKey KeyDownArrow)
-                                                then updateScreen (tetrisSpeedup state) gen'
+                                                then updateScreen (tetrisSpeedup state) newScore gen'
                                         else if ev' == (EventSpecialKey KeyUpArrow)
-                                                then updateScreen (tetrisRotate state) gen'
+                                                then updateScreen (tetrisRotate state) newScore gen'
                                         else if ev' == (EventCharacter ' ')
-                                                then updateScreen (tetrisDropblock state) gen'
-                                        else updateScreen state gen'
+                                                then updateScreen (tetrisDropblock state) newScore gen'
+                                        else if ev' == (EventCharacter 'r')
+                                                then updateScreen newGame 0 gen'
+                                        else updateScreen state newScore gen'
                                     where
                                         nextshape = fst (randomShape gen)
                                         gen' = snd (randomShape gen)
                                         state = tetrisUpdate gameState nextshape
+                                        newScore = score + (tetrisScore gameState)
             updateWindow w $ do
                 drawGrid gridY gridX gridcolor
             render
-            updateScreen newGame rgen
+            updateScreen newGame 0 rgen

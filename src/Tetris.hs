@@ -103,10 +103,10 @@ clearLines rows | empty rows = replicate (missing_rows rows) empty_row ++ remove
               empty_row = replicate 10 Nothing
 
               remove_lines :: Grid -> Grid
-              remove_lines = filter (not . full_line)
+              remove_lines = filter (not . fullLine)
 
-              full_line :: Row -> Bool
-              full_line line = filter (/= Nothing) line == line
+fullLine :: Row -> Bool
+fullLine line = filter (/= Nothing) line == line
 
 freezeBlocks :: Grid -> Grid
 freezeBlocks rows | stopped rows = map freezeBlocks' rows
@@ -201,7 +201,7 @@ createShape sh | sh == I = pad createI
 
 addBlock :: Grid -> Shape -> Grid
 addBlock rows shape | empty rows && not (gameover rows) = createShape shape ++ tail (tail (tail (tail rows)))
-                     | otherwise = rows
+                    | otherwise = rows
 
 dropBlock :: Grid -> Grid
 dropBlock rows | gravitate rows /= rows = dropBlock (gravitate rows)
@@ -227,3 +227,6 @@ tetrisRotate state = state
 
 gameover :: Grid -> Bool
 gameover state = any (not . all moving . catMaybes) (take 4 state)
+
+tetrisScore :: Grid -> Int
+tetrisScore state = product (replicate 2 (length (filter (==True) (map fullLine state))))
