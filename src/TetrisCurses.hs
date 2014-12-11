@@ -1,6 +1,5 @@
 module TetrisCurses where
 import UI.NCurses
-import Data.List.Split
 import System.Random
 import Text.Printf
 
@@ -90,10 +89,10 @@ playGame = do
                                 moveCursor (gridY + (quot rows 2)) (gridX+8)
                                 setColor redtext
                                 drawString "         "
-                                moveCursor (gridY + (quot rows 2)+1) (gridX+8)
-                                drawString "GAME OVER!"
+                                moveCursor (gridY + (quot rows 2)+1) (gridX+2)
+                                drawString "     GAME OVER!     "
                                 moveCursor (gridY + (quot rows 2)+2) (gridX+2)
-                                drawString " press 'r' to retry"
+                                drawString " press 'r' to retry "
 
                 drawScore score = do
                                      moveCursor (gridY-1) (gridX+2)
