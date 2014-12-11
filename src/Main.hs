@@ -24,6 +24,7 @@ main = do
             cyan <- newColorID ColorCyan ColorCyan 6
             white <- newColorID ColorWhite ColorWhite 7
             magenta <- newColorID ColorMagenta ColorMagenta 8
+            redtext <- newColorID ColorRed ColorDefault 9
             let
                 drawblock color = do
                                 setColor color
@@ -51,6 +52,14 @@ main = do
                                             drawLine head y
                                             drawBlocks tail
                 drawBlocks (head:tail) = drawBlocks tail
+                drawGameOver = do
+                                moveCursor (gridY + (quot rows 2)) (gridX+8)
+                                setColor redtext
+                                drawString "         "
+                                moveCursor (gridY + (quot rows 2)+1) (gridX+8)
+                                drawString "GAME OVER!"
+                                moveCursor (gridY + (quot rows 2)+2) (gridX+8)
+                                drawString "         "
 
             setCursorMode CursorInvisible
             setEcho False
@@ -59,8 +68,9 @@ main = do
             let updateScreen gameState gen = do
                                 updateWindow w $ do
                                     drawBlocks gameState
+                                    if gameover gameState then drawGameOver else return ()
                                 render
-                                ev <- getEvent w (Just 1000)
+                                ev <- getEvent w (Just 200)
                                 case ev of
                                     Nothing -> updateScreen state gen'
                                     Just ev' -> if ev' == (EventCharacter 'q')
@@ -77,10 +87,9 @@ main = do
                                                 then updateScreen (tetrisDropblock state) gen'
                                         else updateScreen state gen'
                                     where
-                                        u :: Int
-                                        u = 1
-                                        state = tetrisUpdate gameState gen
-                                        gen' = (snd (randomR (u,10) gen))
+                                        nextshape = fst (randomShape gen)
+                                        gen' = snd (randomShape gen)
+                                        state = tetrisUpdate gameState nextshape
             updateWindow w $ do
                 drawGrid gridY gridX gridcolor
             render
