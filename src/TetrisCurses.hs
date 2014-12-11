@@ -62,7 +62,7 @@ playGame = do
                                 moveCursor y x
                                 drawString gridMiddle
                                 drawLines' (y+1) x (n-1)
-                                                | otherwise = return()
+                                             | otherwise = return()
             drawBlocks :: Grid -> Update()
             drawBlocks [] = return ()
             drawBlocks (head:tail) | length (head:tail) <= fromIntegral rows = do
@@ -125,6 +125,12 @@ playGame = do
                 moveCursor (gridY + quot rows 2 + 2) (gridX + 2)
                 drawString "        0-9         "
 
+            clearStats = do
+                moveCursor (gridY - 1) (gridX + 1)
+                setColor gridcolor
+                drawString "                      "
+
+
             updateScreen :: Grid -> Int -> StdGen -> Int -> Curses()
             updateScreen gameState currentScore gen lvl = do
                 updateWindow w $ do
@@ -163,10 +169,12 @@ playGame = do
 
                         newScore :: Int
                         newScore = currentScore + (score gameState*lvl)
+
             game :: Curses()
             game = do
                 updateWindow w $ drawGrid gridY gridX gridcolor
                 updateWindow w levelMenu
+                updateWindow w clearStats
                 render
                 ev <- getEvent w Nothing
                 case ev of
