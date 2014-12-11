@@ -1,4 +1,20 @@
-module Tetris where
+module Tetris(
+    newGame,
+    randomShape,
+    update,
+    addBlock,
+    dropBlock,
+    speedUp,
+    moveRight,
+    moveLeft,
+    rotate,
+    score,
+    gameOver,
+    Shape(..),
+    Row,
+    Block(..),
+    Grid
+) where
 import Data.List
 import Data.Maybe
 import System.Random
@@ -12,11 +28,50 @@ data Block = Block { shape :: Shape, moving::Bool, origin::Bool}
 type Row = [Maybe Block]
 type Grid = [Row]
 
+newGame :: Grid
+newGame = replicate 26 (replicate 10 Nothing)
+
 randomShape :: RandomGen g => g -> (Shape, g)
 randomShape g = case randomR (0,length [J ..]-1) g of (r, g') -> (toEnum r, g')
 
-newGame :: Grid
-newGame = replicate 26 (replicate 10 Nothing)
+update :: Grid -> Shape -> Grid
+update state = addBlock (gravitate (clearLines (freezeBlocks state)))
+
+addBlock :: Grid -> Shape -> Grid
+addBlock rows shape | empty rows && not (gameOver rows) = createShape shape ++ tail (tail (tail (tail rows)))
+                    | otherwise = rows
+
+dropBlock :: Grid -> Grid
+dropBlock rows | gravitate rows /= rows = dropBlock (gravitate rows)
+               | otherwise = rows
+
+speedUp :: Grid -> Grid
+speedUp = gravitate
+
+moveRight :: Grid -> Grid
+moveRight rows | not(touchright rows) = transpose (gravitate (transpose rows))
+               | otherwise = rows
+        where
+            touchright :: Grid -> Bool
+            touchright rows = any moving (mapMaybe last rows)
+
+moveLeft :: Grid -> Grid
+moveLeft rows | not(touchleft rows) = map reverse (transpose (gravitate (transpose (map reverse rows))))
+              | otherwise = rows
+        where
+            touchleft :: Grid -> Bool
+            touchleft rows = any moving (mapMaybe head rows)
+
+rotate :: Grid -> Grid
+rotate state = state
+
+score :: Grid -> Int
+score state = product (replicate 2 (length (filter (==True) (map fullLine state))))
+
+gameOver :: Grid -> Bool
+gameOver state = any (not . all moving . catMaybes) (take 4 state)
+
+---Helpers
 
 gravitate :: Grid -> Grid
 gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
@@ -55,7 +110,6 @@ gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
                 ground (h:t) | stationaryBlock h = h:t
                              | otherwise = ground t
 
-
 stopped :: Grid -> Bool
 stopped rows = any stopped' (transpose rows) || empty rows
     where
@@ -78,19 +132,6 @@ empty rows = all empty' (transpose rows)
         empty' l | not (any moving (catMaybes l)) = True
         empty' l = False
 
-moveLeft :: Grid -> Grid
-moveLeft rows | not(touchleft rows) = map reverse (transpose (gravitate (transpose (map reverse rows))))
-               | otherwise = rows
-        where
-            touchleft :: Grid -> Bool
-            touchleft rows = any moving (mapMaybe head rows)
-
-moveRight :: Grid -> Grid
-moveRight rows | not(touchright rows) = transpose (gravitate (transpose rows))
-                | otherwise = rows
-        where
-            touchright :: Grid -> Bool
-            touchright rows = any moving (mapMaybe last rows)
 
 clearLines :: Grid -> Grid
 clearLines rows | empty rows = replicate (missing_rows rows) empty_row ++ remove_lines rows
@@ -199,34 +240,3 @@ createShape sh | sh == I = pad createI
                         b = block T False
                         o = block T True
 
-addBlock :: Grid -> Shape -> Grid
-addBlock rows shape | empty rows && not (gameover rows) = createShape shape ++ tail (tail (tail (tail rows)))
-                    | otherwise = rows
-
-dropBlock :: Grid -> Grid
-dropBlock rows | gravitate rows /= rows = dropBlock (gravitate rows)
-                | otherwise = rows
-
-tetrisUpdate :: Grid -> Shape -> Grid
-tetrisUpdate state = addBlock (gravitate (clearLines (freezeBlocks state)))
-
-tetrisSpeedup :: Grid -> Grid
-tetrisSpeedup = gravitate
-
-tetrisMoveRight :: Grid -> Grid
-tetrisMoveRight = moveRight
-
-tetrisMoveLeft :: Grid -> Grid
-tetrisMoveLeft = moveLeft
-
-tetrisDropblock :: Grid -> Grid
-tetrisDropblock = dropBlock
-
-tetrisRotate :: Grid -> Grid
-tetrisRotate state = state
-
-gameover :: Grid -> Bool
-gameover state = any (not . all moving . catMaybes) (take 4 state)
-
-tetrisScore :: Grid -> Int
-tetrisScore state = product (replicate 2 (length (filter (==True) (map fullLine state))))
