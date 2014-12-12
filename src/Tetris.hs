@@ -74,12 +74,12 @@ rotate grid = insertRotated' (clearGrid grid) (rotateBlock grid) (map (getBlock 
         clearGrid :: Grid -> Grid
         clearGrid grid = clearGrid' grid (movingCoordinates grid)
             where
-                clearGrid' :: Grid -> (Int,Int) -> Grid
+                clearGrid' :: Grid -> [(Int,Int)] -> Grid
                 clearGrid' = foldl (\ grid h -> setBlock grid h Nothing)
 
         movingCoordinates :: Grid -> [(Int,Int)]
         movingCoordinates [] = []
-        movingCoordinates (h:t) = movingCoordinates' h 25 - length t  ++ movingCoordinates t
+        movingCoordinates (h:t) = movingCoordinates' h (25 - length t)  ++ movingCoordinates t
             where
                 movingCoordinates' :: Row -> Int -> [(Int,Int)]
                 movingCoordinates' [] _ = []
@@ -105,7 +105,7 @@ rotate grid = insertRotated' (clearGrid grid) (rotateBlock grid) (map (getBlock 
         rotatePoint (originx,originy) (x,y) = (originx + originy - y, originy - originx + x)
 
         hasOrigin::Grid -> Bool
-        hasOrigin grid = null (origins grid)
+        hasOrigin grid = not (null (origins grid))
 
         unoccupied::Grid -> (Int,Int) -> Bool
         unoccupied grid (x,y) = (x > 0 && x < gridHeight && y > 0 && y < gridWidth) 
@@ -133,7 +133,6 @@ gridHeight = 26
 
 gridWidth:: Int
 gridWidth = 10
-
 
 gravitate :: Grid -> Grid
 gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
@@ -193,7 +192,6 @@ empty rows = all empty' (transpose rows)
         empty' :: Row -> Bool
         empty' l | not (any moving (catMaybes l)) = True
         empty' l = False
-
 
 clearLines :: Grid -> Grid
 clearLines rows | empty rows = replicate (missing_rows rows) empty_row ++ remove_lines rows
