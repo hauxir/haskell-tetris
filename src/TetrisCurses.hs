@@ -1,7 +1,6 @@
 module TetrisCurses where
 import UI.NCurses
 import System.Random
-import Text.Printf
 import Control.Monad
 import Data.Char
 import Tetris

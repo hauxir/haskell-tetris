@@ -30,26 +30,34 @@ type Row = [Maybe Block]
 
 type Grid = [Row]
 
+--Returns an empty Tetris grid
 newGame :: Grid
 newGame = replicate gridHeight (replicate gridWidth Nothing)
 
+--Returns a tuple containing a random shape and a generator
 randomShape :: RandomGen g => g -> (Shape, g)
 randomShape g = case randomR (0,length [J ..]-1) g of (r, g') -> (toEnum r, g')
 
+--Updates the state of a Tetris grid by gravitating, clearing lines and
+--stopping blocks
 update :: Grid -> Shape -> Grid
 update state = addBlock (gravitate (clearLines (freezeBlocks state)))
 
+--Adds shaped blocks on top of the grid
 addBlock :: Grid -> Shape -> Grid
 addBlock rows shape | empty rows && not (gameOver rows) = createShape shape ++ tail (tail (tail (tail rows)))
                     | otherwise = rows
 
+--Drops current shape to the bottom
 dropBlock :: Grid -> Grid
 dropBlock rows | gravitate rows /= rows = dropBlock (gravitate rows)
                | otherwise = rows
 
+--Speeds up the gravity
 speedUp :: Grid -> Grid
 speedUp = gravitate
 
+--Moves the moving blocks right
 moveRight :: Grid -> Grid
 moveRight rows | not(touchright rows) = transpose (gravitate (transpose rows))
                | otherwise = rows
@@ -57,6 +65,7 @@ moveRight rows | not(touchright rows) = transpose (gravitate (transpose rows))
             touchright :: Grid -> Bool
             touchright rows = any moving (mapMaybe last rows)
 
+--Moves the moving blocks left
 moveLeft :: Grid -> Grid
 moveLeft rows | not(touchleft rows) = map reverse (transpose (gravitate (transpose (map reverse rows))))
               | otherwise = rows
@@ -64,6 +73,7 @@ moveLeft rows | not(touchleft rows) = map reverse (transpose (gravitate (transpo
             touchleft :: Grid -> Bool
             touchleft rows = any moving (mapMaybe head rows)
 
+--rotates the moving blocks clockwise
 rotate :: Grid -> Grid
 rotate grid = insertRotated' (clearGrid grid) (rotateBlock grid) (map (getBlock grid) (movingCoordinates grid))
     where
@@ -121,19 +131,23 @@ rotate grid = insertRotated' (clearGrid grid) (rotateBlock grid) (map (getBlock 
                 setBlock' :: Row -> Int -> Maybe Block -> Row
                 setBlock' row y val = fst (splitAt y row) ++ val:tail(snd (splitAt y row))
 
+--Gives the score for current state
 score :: Grid -> Int
 score state = product (replicate 2 (length (filter (==True) (map fullLine state))))
 
+--Indicates whether the given states results in a game over
 gameOver :: Grid -> Bool
 gameOver state = any (not . all moving . catMaybes) (take 4 state)
 
 ---Helpers
+
 gridHeight :: Int
 gridHeight = 26
 
 gridWidth:: Int
 gridWidth = 10
 
+--Gravitates moving blocks downwards
 gravitate :: Grid -> Grid
 gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
                | otherwise = rows
@@ -147,6 +161,7 @@ gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
         gravitate_rows [] = []
         gravitate_rows lis = gravitate_row (head lis) : gravitate_rows (tail lis)
 
+        --Moves blocks downwards
         move_blocks :: Row -> Row
         move_blocks l | is_gap (gap l) = (Nothing:movingBlocks l) ++ tail (gap l) ++ ground l
             where
@@ -171,6 +186,7 @@ gravitate rows | not(stopped rows) = transpose (gravitate_rows (transpose rows))
                 ground (h:t) | stationaryBlock h = h:t
                              | otherwise = ground t
 
+--Determines whether the moving blocks have stopped moving
 stopped :: Grid -> Bool
 stopped rows = any stopped' (transpose rows) || empty rows
     where
@@ -180,12 +196,15 @@ stopped rows = any stopped' (transpose rows) || empty rows
         stopped' (first:second:_) | movingBlock first && stationaryBlock second = True
         stopped' (_:t) = stopped' t
 
+--Determines whether a given block is moving
 movingBlock :: Maybe Block -> Bool
 movingBlock block = isJust block && moving (fromJust block)
 
+--Determines whether a given block is moving
 stationaryBlock :: Maybe Block -> Bool
 stationaryBlock block = isJust block && not (moving (fromJust block))
 
+--Determines whether there are no moving blocks
 empty :: Grid -> Bool
 empty rows = all empty' (transpose rows)
     where
@@ -193,6 +212,7 @@ empty rows = all empty' (transpose rows)
         empty' l | not (any moving (catMaybes l)) = True
         empty' l = False
 
+--Clears all full lines from the grid
 clearLines :: Grid -> Grid
 clearLines rows | empty rows = replicate (missing_rows rows) empty_row ++ remove_lines rows
                  | otherwise = rows
@@ -206,9 +226,11 @@ clearLines rows | empty rows = replicate (missing_rows rows) empty_row ++ remove
               remove_lines :: Grid -> Grid
               remove_lines = filter (not . fullLine)
 
+--Determines whether a line is full
 fullLine :: Row -> Bool
 fullLine line = filter (/= Nothing) line == line
 
+--Changes moving blocks that have stopped moving to stationary
 freezeBlocks :: Grid -> Grid
 freezeBlocks rows | stopped rows = map freezeBlocks' rows
                    | otherwise = rows
@@ -218,6 +240,7 @@ freezeBlocks rows | stopped rows = map freezeBlocks' rows
                 freezeBlocks' (Just (Block s True o):t) = Just (Block s False o): freezeBlocks' t
                 freezeBlocks' b  = head b:freezeBlocks' (tail b)
 
+--Creates a grid containing a given shape to put on top of a game grid
 createShape :: Shape -> Grid
 createShape sh | sh == I = pad createI
                | sh == J = pad createJ
