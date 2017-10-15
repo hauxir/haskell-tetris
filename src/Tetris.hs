@@ -87,22 +87,23 @@ rotate grid =
 insertRotated :: Grid -> [(Int,Int)] -> [Maybe Block] -> Grid
 insertRotated grid [] _ = grid
 insertRotated grid (h:t) (val:valt) = insertRotated (setBlock grid h val) t valt
+insertRotated _ (_:_) [] = error "This should not happen"
 
 clearGrid :: Grid -> Grid
 clearGrid grid = clearGrid' grid (movingCoordinates grid)
-  where
-    clearGrid' :: Grid -> [(Int,Int)] -> Grid
-    clearGrid' = foldl (\ grid h -> setBlock grid h Nothing)
+
+clearGrid' :: Grid -> [(Int,Int)] -> Grid
+clearGrid' = foldl (\grid h -> setBlock grid h Nothing)
 
 movingCoordinates :: Grid -> [(Int,Int)]
 movingCoordinates [] = []
 movingCoordinates (h:t) = movingCoordinates' h (25 - length t)  ++ movingCoordinates t
-  where
-    movingCoordinates' :: Row -> Int -> [(Int,Int)]
-    movingCoordinates' [] _ = []
-    movingCoordinates' (h:t) y
-      | movingBlock h = (y,9- length t):movingCoordinates' t y
-      | otherwise = movingCoordinates' t y
+
+movingCoordinates' :: Row -> Int -> [(Int,Int)]
+movingCoordinates' [] _ = []
+movingCoordinates' (h:t) y
+  | movingBlock h = (y,9- length t):movingCoordinates' t y
+  | otherwise = movingCoordinates' t y
 
 getOrigin :: Grid -> (Int,Int)
 getOrigin grid = head (origins grid)
@@ -136,9 +137,9 @@ getBlock grid (x,y) = (grid !! x) !! y
 setBlock :: Grid -> (Int,Int) -> Maybe Block -> Grid
 setBlock grid (x,y) val =
   fst (splitAt x grid) ++ setBlock' (head (snd(splitAt x grid))) y val:tail(snd (splitAt x grid))
-  where
-    setBlock' :: Row -> Int -> Maybe Block -> Row
-    setBlock' row y val = fst (splitAt y row) ++ val:tail(snd (splitAt y row))
+
+setBlock' :: Row -> Int -> Maybe Block -> Row
+setBlock' row y val = fst (splitAt y row) ++ val:tail(snd (splitAt y row))
 
 --Gives the score for current state
 score :: Grid -> Int
@@ -173,7 +174,9 @@ gravitate rows
 
 --Moves blocks downwards
 move_blocks :: Row -> Row
-move_blocks l | is_gap (gap l) = (Nothing:movingBlocks l) ++ tail (gap l) ++ ground l
+move_blocks l
+  | is_gap (gap l) = (Nothing:movingBlocks l) ++ tail (gap l) ++ ground l
+  | otherwise = error "Should never happen?"
   where
     is_gap :: Row -> Bool
     is_gap row = not (null (gap row)) && isNothing (head (gap row))
@@ -220,23 +223,22 @@ empty :: Grid -> Bool
 empty rows = all empty' (transpose rows)
   where
     empty' :: Row -> Bool
-    empty' l | not (any moving (catMaybes l)) = True
-    empty' l = False
+    empty' l = not (any moving (catMaybes l))
 
 --Clears all full lines from the grid
 clearLines :: Grid -> Grid
 clearLines rows
   | empty rows = replicate (missing_rows rows) empty_row ++ remove_lines rows
   | otherwise = rows
-  where
-    missing_rows :: Grid -> Int
-    missing_rows rows = length rows - length (remove_lines rows)
 
-    empty_row :: Row
-    empty_row = replicate 10 Nothing
+missing_rows :: Grid -> Int
+missing_rows rows = length rows - length (remove_lines rows)
 
-    remove_lines :: Grid -> Grid
-    remove_lines = filter (not . fullLine)
+empty_row :: Row
+empty_row = replicate 10 Nothing
+
+remove_lines :: Grid -> Grid
+remove_lines = filter (not . fullLine)
 
 --Determines whether a line is full
 fullLine :: Row -> Bool
@@ -263,8 +265,9 @@ createShape sh
   | sh == Z = pad createZ
   | sh == O = pad createO
   | sh == T = pad createT
+  | otherwise = error "Unrecognized shape"
   where
-    block shape' origin = Just (Block shape' True origin)
+    block shape' origin' = Just (Block shape' True origin')
     x = Nothing
     hpad l = replicate 3 x ++ l ++ replicate 4 x
 
@@ -323,7 +326,6 @@ createShape sh
       ]
       where
         b = block O False
-        o = block O True
 
     createT = [
       [b,o,b],
