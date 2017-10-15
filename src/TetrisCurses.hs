@@ -6,182 +6,164 @@ import Data.Char
 import Tetris
 
 playGame :: IO ()
-playGame = do
-    g <- newStdGen
-    runCurses $ do
-        w <- defaultWindow
-        gridcolor <- newColorID ColorBlue ColorDefault 1
-        red <- newColorID ColorRed ColorRed 2
-        green <- newColorID ColorGreen ColorGreen 3
-        blue <- newColorID ColorBlue ColorBlue 4
-        yellow <- newColorID ColorYellow ColorYellow 5
-        cyan <- newColorID ColorCyan ColorCyan 6
-        white <- newColorID ColorWhite ColorWhite 7
-        magenta <- newColorID ColorMagenta ColorMagenta 8
-        redtext <- newColorID ColorRed ColorDefault 9
-        let
-            block :: String
-            block = " ."
+playGame = newStdGen >>= \g -> runCurses $ do
+  w <- defaultWindow
+  gridcolor <- newColorID ColorBlue ColorDefault 1
+  red <- newColorID ColorRed ColorRed 2
+  green <- newColorID ColorGreen ColorGreen 3
+  blue <- newColorID ColorBlue ColorBlue 4
+  yellow <- newColorID ColorYellow ColorYellow 5
+  cyan <- newColorID ColorCyan ColorCyan 6
+  white <- newColorID ColorWhite ColorWhite 7
+  magenta <- newColorID ColorMagenta ColorMagenta 8
+  redtext <- newColorID ColorRed ColorDefault 9
+  let
+      draw :: Maybe Block -> Update()
+      draw (Just (Block I _ _)) = drawBlock red
+      draw (Just (Block S _ _)) = drawBlock green
+      draw (Just (Block O _ _)) = drawBlock blue
+      draw (Just (Block T _ _)) = drawBlock yellow
+      draw (Just (Block Z _ _)) = drawBlock cyan
+      draw (Just (Block J _ _)) = drawBlock white
+      draw (Just (Block L _ _)) = drawBlock magenta
+      draw Nothing = drawBlock gridcolor
 
-            gridX :: Integer
-            gridX = 50
+      drawBlocks :: Grid -> Update()
+      drawBlocks [] = return ()
+      drawBlocks l@(h:t) = do
+        when (length l <= fromIntegral rows) $ drawLine h y
+        drawBlocks t
+        where
+          y = (gridY+rows)- toInteger (length t)
 
-            gridY :: Integer
-            gridY = 4
+      drawLine :: Row -> Integer -> Update()
+      drawLine [] _ = return ()
+      drawLine (h:t) y = do
+        let x = columns-(toInteger (length block)* toInteger (length t))
+        moveCursor y (gridX+x+columns)
+        draw h
+        drawLine t y
 
-            rows :: Integer
-            rows = toInteger (length newGame - 4)
+      drawGameOver :: Update()
+      drawGameOver = do
+        moveCursor (gridY + quot rows 2) (gridX + 8)
+        setColor redtext
+        drawString "         "
+        moveCursor (gridY + quot rows 2 + 1) (gridX + 2)
+        drawString "     GAME OVER!     "
+        moveCursor (gridY + quot rows 2 + 2) (gridX + 2)
+        drawString " press 'r' to retry "
 
-            columns :: Integer
-            columns = toInteger (length (head newGame))
+      drawScore :: Int -> Update()
+      drawScore scoreValue = do
+        moveCursor (gridY - 1) (gridX + 1)
+        setColor gridcolor
+        let scorestr = show scoreValue
+        drawString ("Score: " ++ scorestr)
 
-            drawGrid :: Integer -> Integer -> ColorID -> Update()
-            drawGrid y x c = do
-                setColor c
-                moveCursor y (x+2)
-                drawString gridTop
-                drawLines (y+1) (x+1)
-                moveCursor (rows+y+1) (x+1)
-                drawString gridBottom
-                where
-                    gridTop :: String
-                    gridTop = "____________________"
+      drawLevel :: Int -> Update()
+      drawLevel level = do
+        moveCursor (gridY - 1) (gridX + 15)
+        setColor gridcolor
+        drawString ("Level: " ++ show level)
 
-                    gridMiddle :: String
-                    gridMiddle = "|                    |"
+      levelMenu = do
+        setColor redtext
+        drawString "                    "
+        moveCursor (gridY + quot rows 2 + 1) (gridX + 2)
+        drawString "    Choose level:   "
+        moveCursor (gridY + quot rows 2 + 2) (gridX + 2)
+        drawString "        0-9         "
 
-                    gridBottom :: String
-                    gridBottom = " -------------------- "
+      clearStats = do
+        moveCursor (gridY - 1) (gridX + 1)
+        setColor gridcolor
+        drawString "                      "
 
-                    drawLines :: Integer -> Integer -> Update()
-                    drawLines y x = drawLines' y x rows
-                        where
-                            drawLines' :: Integer -> Integer -> Integer -> Update()
-                            drawLines' y x n | n > 0 = do
-                                moveCursor y x
-                                drawString gridMiddle
-                                drawLines' (y+1) x (n-1)
-                                             | otherwise = return()
-            drawBlocks :: Grid -> Update()
-            drawBlocks [] = return ()
-            drawBlocks (head:tail) | length (head:tail) <= fromIntegral rows = do
-                                        let y = (gridY+rows)- toInteger (length tail)
-                                        drawLine head y
-                                        drawBlocks tail
-                                   | otherwise = drawBlocks tail
-                where
-                    drawLine :: Row -> Integer -> Update()
-                    drawLine [] y = return ()
-                    drawLine (head:tail) y = do
-                            let x = columns-(toInteger (length block)* toInteger (length tail))
-                            moveCursor y (gridX+x+columns)
-                            draw head
-                            drawLine tail y
-                        where
-                            drawBlock :: ColorID -> Update()
-                            drawBlock color = do
-                                setColor color
-                                drawString block
+      updateScreen :: Grid -> Int -> StdGen -> Int -> Curses()
+      updateScreen gameState currentScore gen lvl = do
+        updateWindow w $ do
+          drawBlocks gameState
+          drawScore currentScore
+          drawLevel lvl
+          when (gameOver gameState) drawGameOver
+        render
+        ev <- getEvent w (Just ((1+(9-toInteger lvl))*100))
+        case ev of
+          Nothing -> updateScreen state newScore gen' lvl
+          Just ev'
+            | ev' == EventCharacter 'q' -> return ()
+            | ev' == EventSpecialKey KeyLeftArrow -> updateScreen (moveLeft state) newScore gen' lvl
+            | ev' == EventSpecialKey KeyRightArrow -> updateScreen (moveRight state) newScore gen' lvl
+            | ev' == EventSpecialKey KeyDownArrow -> updateScreen (speedUp state) newScore gen' lvl
+            | ev' == EventSpecialKey KeyUpArrow -> updateScreen (rotate state) newScore gen' lvl
+            | ev' == EventCharacter ' ' -> updateScreen (dropBlock state) newScore gen' lvl
+            | ev' == EventCharacter 'r' -> game
+            | otherwise -> updateScreen state newScore gen' lvl
+        where
+          (nextshape, gen') = randomShape gen
+          state = update gameState nextshape
+          newScore = currentScore + (score gameState*lvl)
 
-                            draw :: Maybe Block -> Update()
-                            draw (Just (Block I _ _)) = drawBlock red
-                            draw (Just (Block S _ _)) = drawBlock green
-                            draw (Just (Block O _ _)) = drawBlock blue
-                            draw (Just (Block T _ _)) = drawBlock yellow
-                            draw (Just (Block Z _ _)) = drawBlock cyan
-                            draw (Just (Block J _ _)) = drawBlock white
-                            draw (Just (Block L _ _)) = drawBlock magenta
-                            draw Nothing = drawBlock gridcolor
+      game :: Curses()
+      game = do
+        updateWindow w $ drawGrid gridY gridX gridcolor
+        updateWindow w levelMenu
+        updateWindow w clearStats
+        render
+        ev <- getEvent w Nothing
+        case ev of
+          Nothing -> game
+          Just (EventCharacter c)
+            | isNumber c -> updateScreen newGame 0 g (digitToInt c)
+            | c == 'q' -> return ()
+          Just _ -> game
 
-            drawGameOver :: Update()
-            drawGameOver = do
-                moveCursor (gridY + quot rows 2) (gridX + 8)
-                setColor redtext
-                drawString "         "
-                moveCursor (gridY + quot rows 2 + 1) (gridX + 2)
-                drawString "     GAME OVER!     "
-                moveCursor (gridY + quot rows 2 + 2) (gridX + 2)
-                drawString " press 'r' to retry "
+  _ <- setCursorMode CursorInvisible
+  setEcho False
+  game
 
-            drawScore :: Int -> Update()
-            drawScore score = do
-                moveCursor (gridY - 1) (gridX + 1)
-                setColor gridcolor
-                let scorestr = show score
-                drawString ("Score: " ++ scorestr)
+drawBlock :: ColorID -> Update()
+drawBlock color = do
+  setColor color
+  drawString block
 
-            drawLevel :: Int -> Update()
-            drawLevel level = do
-                moveCursor (gridY - 1) (gridX + 15)
-                setColor gridcolor
-                drawString ("Level: " ++ show level)
+drawGrid :: Integer -> Integer -> ColorID -> Update()
+drawGrid y x c = do
+  setColor c
+  moveCursor y (x+2)
+  drawString gridTop
+  drawLines (y+1) (x+1)
+  moveCursor (rows+y+1) (x+1)
+  drawString gridBottom
 
-            levelMenu = do
-                setColor redtext
-                drawString "                    "
-                moveCursor (gridY + quot rows 2 + 1) (gridX + 2)
-                drawString "    Choose level:   "
-                moveCursor (gridY + quot rows 2 + 2) (gridX + 2)
-                drawString "        0-9         "
+drawLines :: Integer -> Integer -> Update()
+drawLines y x = drawLines' y x rows
 
-            clearStats = do
-                moveCursor (gridY - 1) (gridX + 1)
-                setColor gridcolor
-                drawString "                      "
+drawLines' :: Integer -> Integer -> Integer -> Update()
+drawLines' y x n
+  | n < 1 = return()
+  | otherwise = do
+      moveCursor y x
+      drawString gridMiddle
+      drawLines' (y+1) x (n-1)
 
+gridTop, gridMiddle, gridBottom :: String
+gridTop    = "____________________"
+gridMiddle = "|                    |"
+gridBottom = " -------------------- "
 
-            updateScreen :: Grid -> Int -> StdGen -> Int -> Curses()
-            updateScreen gameState currentScore gen lvl = do
-                updateWindow w $ do
-                    drawBlocks gameState
-                    drawScore currentScore
-                    drawLevel lvl
-                    when (gameOver gameState) drawGameOver
-                render
-                ev <- getEvent w (Just ((1+(9-toInteger lvl))*100))
-                case ev of
-                    Nothing -> updateScreen state newScore gen' lvl
-                    Just ev'
-                        | ev' == EventCharacter 'q' -> return ()
-                        | ev' == EventSpecialKey KeyLeftArrow
-                            -> updateScreen (moveLeft state) newScore gen' lvl
-                        | ev' == EventSpecialKey KeyRightArrow
-                            -> updateScreen (moveRight state) newScore gen' lvl
-                        | ev' == EventSpecialKey KeyDownArrow
-                            -> updateScreen (speedUp state) newScore gen' lvl
-                        | ev' == EventSpecialKey KeyUpArrow
-                            -> updateScreen (rotate state) newScore gen' lvl
-                        | ev' == EventCharacter ' '
-                            -> updateScreen (dropBlock state) newScore gen' lvl
-                        | ev' == EventCharacter 'r'
-                            -> game
-                        | otherwise -> updateScreen state newScore gen' lvl
-                    where
-                        nextshape :: Shape
-                        nextshape = fst (randomShape gen)
+block :: String
+block = " ."
 
-                        gen':: StdGen
-                        gen' = snd (randomShape gen)
+gridX :: Integer
+gridX = 50
 
-                        state :: Grid
-                        state = update gameState nextshape
+gridY :: Integer
+gridY = 4
 
-                        newScore :: Int
-                        newScore = currentScore + (score gameState*lvl)
+rows :: Integer
+rows = toInteger (length newGame - 4)
 
-            game :: Curses()
-            game = do
-                updateWindow w $ drawGrid gridY gridX gridcolor
-                updateWindow w levelMenu
-                updateWindow w clearStats
-                render
-                ev <- getEvent w Nothing
-                case ev of
-                    Nothing -> game
-                    Just (EventCharacter c) | isNumber c -> updateScreen newGame 0 g (digitToInt c)
-                                            | c == 'q' -> return ()
-                    Just _ -> game
-
-        setCursorMode CursorInvisible
-        setEcho False
-        game
+columns :: Integer
+columns = toInteger (length (head newGame))
