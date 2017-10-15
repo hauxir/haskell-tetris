@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 
 executable htetris
   main-is:             Main.hs
-  -- other-modules:
+  other-modules:       Tetris, TetrisCurses
   -- other-extensions:
   build-depends:       base, ncurses, random
   hs-source-dirs:      src
