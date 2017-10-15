@@ -45,14 +45,15 @@ update state = addBlock (gravitate (clearLines (freezeBlocks state)))
 
 --Adds shaped blocks on top of the grid
 addBlock :: Grid -> Shape -> Grid
-addBlock rows shape
-  | empty rows && not (gameOver rows) = createShape shape ++ drop 4 rows
+addBlock rows shape'
+  | empty rows && not (gameOver rows) = createShape shape' ++ drop 4 rows
   | otherwise = rows
 
 --Drops current shape to the bottom
 dropBlock :: Grid -> Grid
-dropBlock rows | gravitate rows /= rows = dropBlock (gravitate rows)
-               | otherwise = rows
+dropBlock rows
+  | gravitate rows /= rows = dropBlock (gravitate rows)
+  | otherwise = rows
 
 --Speeds up the gravity
 speedUp :: Grid -> Grid
@@ -251,7 +252,7 @@ createShape sh | sh == I = pad createI
                | sh == O = pad createO
                | sh == T = pad createT
         where
-              block shape origin = Just (Block shape True origin)
+              block shape' origin = Just (Block shape' True origin)
               x = Nothing
               hpad l = replicate 3 x ++ l ++ replicate 4 x
 
