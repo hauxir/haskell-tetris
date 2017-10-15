@@ -39,8 +39,8 @@ playGame = newStdGen >>= \g -> runCurses $ do
       drawLine :: Row -> Integer -> Update()
       drawLine [] _ = return ()
       drawLine (h:t) y = do
-        let x = columns-(toInteger (length block)* toInteger (length t))
-        moveCursor y (gridX+x+columns)
+        let x = columns - (toInteger (length block) * toInteger (length t))
+        moveCursor y $ gridX + x + columns
         draw h
         drawLine t y
 
@@ -115,7 +115,7 @@ playGame = newStdGen >>= \g -> runCurses $ do
         case ev of
           Nothing -> game
           Just (EventCharacter c)
-            | isNumber c -> updateScreen newGame 0 g (digitToInt c)
+            | isNumber c -> updateScreen newGame 0 g $ digitToInt c
             | c == 'q' -> return ()
           Just _ -> game
 
@@ -131,7 +131,7 @@ drawBlock color = do
 drawGrid :: Integer -> Integer -> ColorID -> Update()
 drawGrid y x c = do
   setColor c
-  moveCursor y (x+2)
+  moveCursor y (x+1)
   drawString gridTop
   drawLines (y+1) (x+1)
   moveCursor (rows+y+1) (x+1)
@@ -149,7 +149,7 @@ drawLines' y x n
       drawLines' (y+1) x (n-1)
 
 gridTop, gridMiddle, gridBottom :: String
-gridTop    = "____________________"
+gridTop    = " ____________________ "
 gridMiddle = "|                    |"
 gridBottom = " -------------------- "
 
