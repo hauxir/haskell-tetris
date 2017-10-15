@@ -1,0 +1,7 @@
+resolver: nightly-2017-10-13
+
+packages:
+  - .
+
+extra-deps:
+  - ncurses-0.2.16
