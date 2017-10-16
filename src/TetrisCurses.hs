@@ -167,7 +167,7 @@ playGame = do
                         state = update gameState nextshape
 
                         newScore :: Int
-                        newScore = currentScore + (score gameState*lvl)
+                        newScore = currentScore + (score gameState*(1+lvl))
 
             game :: Curses()
             game = do
