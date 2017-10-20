@@ -103,7 +103,7 @@ playGame = newStdGen >>= \g -> runCurses $ do
         where
           (nextshape, gen') = randomShape gen
           state = update gameState nextshape
-          newScore = currentScore + (score gameState*lvl)
+          newScore = currentScore + (score gameState*(1+lvl))
 
       game :: Curses()
       game = do
