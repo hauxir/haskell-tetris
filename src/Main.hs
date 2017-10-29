@@ -1,4 +1,4 @@
 import TetrisCurses
 
 main :: IO()
-main = playGame
+main = playGame [] >>= print

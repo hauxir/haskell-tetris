@@ -8,8 +8,8 @@ import Tetris
 import Text.Printf
 import UI.NCurses
 
-playGame :: IO ()
-playGame = newStdGen >>= \g -> runCurses $ do
+playGame :: [Int] -> IO [Int]
+playGame theHighScores = newStdGen >>= \g -> runCurses $ do
   w <- defaultWindow
   gridcolor <- newColorID ColorBlue ColorDefault 1
   red <- newColorID ColorRed ColorRed 2
@@ -86,7 +86,7 @@ playGame = newStdGen >>= \g -> runCurses $ do
         setColor gridcolor
         drawString "                      "
 
-      updateScreen :: Grid -> Int -> StdGen -> Int -> [Int] -> Bool -> Curses()
+      updateScreen :: Grid -> Int -> StdGen -> Int -> [Int] -> Bool -> Curses [Int]
       updateScreen gameState currentScore gen lvl highScores updatable = do
         let
           gameEnded = gameOver gameState
@@ -105,7 +105,7 @@ playGame = newStdGen >>= \g -> runCurses $ do
         case ev of
           Nothing -> updateScreen state newScore gen' lvl newHighScores newUpd
           Just ev'
-            | ev' == EventCharacter 'q' -> return ()
+            | ev' == EventCharacter 'q' -> return newHighScores
             | ev' == EventSpecialKey KeyLeftArrow -> updateScreen (moveLeft state) newScore gen' lvl newHighScores newUpd
             | ev' == EventSpecialKey KeyRightArrow -> updateScreen (moveRight state) newScore gen' lvl newHighScores newUpd
             | ev' == EventSpecialKey KeyDownArrow -> updateScreen (speedUp state) newScore gen' lvl newHighScores newUpd
@@ -118,7 +118,7 @@ playGame = newStdGen >>= \g -> runCurses $ do
           state = update gameState nextshape
           newScore = currentScore + (score gameState*(1+lvl))
 
-      game :: [Int] -> Curses()
+      game :: [Int] -> Curses [Int]
       game scores = do
         updateWindow w $ drawGrid gridY gridX gridcolor
         updateWindow w levelMenu
@@ -130,14 +130,12 @@ playGame = newStdGen >>= \g -> runCurses $ do
           Nothing -> game scores
           Just (EventCharacter c)
             | isNumber c -> updateScreen newGame 0 g (digitToInt c) scores True
-            | c == 'q' -> return ()
+            | c == 'q' -> return scores
           Just _ -> game scores
 
   _ <- setCursorMode CursorInvisible
   setEcho False
-  game _s
-  where
-    _s = [3, 2, 1]
+  game theHighScores
 
 drawBlock :: ColorID -> Update()
 drawBlock color = do
