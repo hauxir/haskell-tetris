@@ -11,7 +11,7 @@ cabal-version:       >=1.10
 executable htetris
   main-is:             Main.hs
   other-modules:       Tetris, TetrisCurses
-  build-depends:       base, ncurses, random
+  build-depends:       base, ncurses, random, directory
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options: -O2 -Wall -Werror
