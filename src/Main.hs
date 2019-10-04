@@ -13,11 +13,13 @@ unpersistScores = do
   if not hasF then return [] else parseScores <$> readFile scoreFilePath
 
 persistScores :: [Int] -> IO ()
-persistScores [] = return ()
-persistScores scores = writeFile scoreFilePath (show scores)
+persistScores = writeFile scoreFilePath . show . take maxScores . filter (> 0)
 
 scoreFilePath :: FilePath
 scoreFilePath = "scores"
+
+maxScores :: Int
+maxScores = 10
 
 parseScores :: String -> [Int]
 parseScores s
