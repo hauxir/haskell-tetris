@@ -15,3 +15,5 @@ cabal.config
 *.prof
 *.aux
 *.hp
+scores
+stack.yaml.lock
